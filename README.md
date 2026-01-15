@@ -155,10 +155,8 @@ const dataStore = dataProxy({
 })
 
 // Hydrate both
-await Promise.all([
-  userProxy.hydrate(userStore),
-  dataProxy.hydrate(dataStore)
-])
+userProxy.hydrate(userStore)
+dataProxy.hydrate(dataStore)
 ```
 
 ## Plugin API
