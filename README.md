@@ -72,7 +72,7 @@ import {
   MemoryStorageStrategy,   // In-memory (testing)
 } from 'valtio-persist-plugin'
 
-factory.use(createPersistPlugin('session-data', {
+proxy.use(createPersistPlugin('session-data', {
   storage: SessionStorageStrategy
 }))
 ```
@@ -82,7 +82,7 @@ factory.use(createPersistPlugin('session-data', {
 ```typescript
 import { IndexedDBStorage } from 'valtio-persist-plugin/indexed-db'
 
-factory.use(createPersistPlugin('large-data', {
+proxy.use(createPersistPlugin('large-data', {
   storage: IndexedDBStorage
 }))
 ```
@@ -92,7 +92,7 @@ factory.use(createPersistPlugin('large-data', {
 ```typescript
 import { AsyncStorage } from 'valtio-persist-plugin/async-storage'
 
-factory.use(createPersistPlugin('mobile-state', {
+proxy.use(createPersistPlugin('mobile-state', {
   storage: AsyncStorage
 }))
 ```
@@ -104,11 +104,11 @@ File system storage are planned. They'll be here soon.
 Persist only specific parts of your state:
 
 ```typescript
-factory.use(createPersistPlugin('auth', {
+proxy.use(createPersistPlugin('auth', {
   paths: ['token', 'user']  // Only persist these top-level keys
 }))
 
-const store = factory({
+const store = proxy({
   token: '',
   user: null,
   tempData: {},  // Not persisted
@@ -230,7 +230,7 @@ import { DefaultMergeStrategy } from 'valtio-persist-plugin'
 ```typescript
 import { DeepMergeStrategy } from 'valtio-persist-plugin'
 
-factory.use(createPersistPlugin('nested', {
+proxy.use(createPersistPlugin('nested', {
   merge: DeepMergeStrategy
 }))
 
@@ -276,7 +276,7 @@ interface AppState {
   cache: Record<string, unknown>
 }
 
-factory.use(createPersistPlugin<AppState>('app', {
+proxy.use(createPersistPlugin<AppState>('app', {
   paths: ['user', 'preferences']
 }))
 ```
