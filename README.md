@@ -36,8 +36,8 @@ const store = proxy({
   count: 0
 })
 
-// make sure to hydrate. You can do this at whatever point suits you best. Doing it here hydrates it immediately
-persist.hydrate(store)
+// hydrate from storage - you can do this at whatever point suits you best
+await proxy['mydata'].hydrate(store)
 ```
 
 ```typescript
@@ -59,7 +59,7 @@ const App = () => {
 export default App
 ```
 
-That's it. Your data will now be stored into localStorage (that's the default). We'll get to that next.
+That's it. Your data will now be stored into localStorage (that's the default).
 
 ## Storage Strategies
 
@@ -97,7 +97,7 @@ proxy.use(createPersistPlugin('mobile-state', {
 }))
 ```
 
-File system storage are planned. They'll be here soon.
+File system storage is planned and will be here soon.
 
 ## Path Filtering
 
@@ -118,9 +118,10 @@ const store = proxy({
 
 ## Multiple Storage Backends
 
-`valtio-plugin` gives us the ability to scope our state into different 'instances'. This allows us to have mutliple different stores that have all different types of strategies.
+`valtio-plugin` gives us the ability to scope our state into different 'instances'. This allows us to have multiple different stores that all have different types of strategies.
 
 ```typescript
+import { proxy } from 'valtio-plugin'
 import { createPersistPlugin, SessionStorageStrategy } from 'valtio-persist-plugin'
 import { IndexedDBStorage } from 'valtio-persist-plugin/indexed-db'
 
@@ -138,7 +139,7 @@ const userStore = userProxy({
   preferences: { 
     theme: 'dark',
     ui: {
-      sidebar: 'true' // not persisted
+      sidebar: true // not persisted
     }
   }
 })
@@ -155,36 +156,37 @@ const dataStore = dataProxy({
 })
 
 // Hydrate both
-userProxy.hydrate(userStore)
-dataProxy.hydrate(dataStore)
+await userProxy['session'].hydrate(userStore)
+await dataProxy['data'].hydrate(dataStore)
 ```
 
 ## Plugin API
 
-Once registered, the plugin exposes these methods.
+Once registered, the plugin exposes these methods through the proxy/factory instance:
 
 ```typescript
 const myProxyInstance = proxy.createInstance()
 
-const myStorePlugin = myProxyInstance.use(c)
 myProxyInstance.use(createPersistPlugin('my-store'))
 
+const store = myProxyInstance({ count: 0 })
+
 // Hydrate from storage
-myProxyInstance.hydrate(store)
+await myProxyInstance['my-store'].hydrate(store)
 
 // Manually trigger persistence
-myProxyInstance.persist(store)
+await myProxyInstance['my-store'].persist(store)
 
 // Clear persisted data
-myProxyInstance.clear()
+await myProxyInstance['my-store'].clear()
 
 // Check hydration status
-if (myProxyInstance.isHydrated()) {
+if (myProxyInstance['my-store'].isHydrated()) {
   console.log('Ready!')
 }
 
 // Get the storage key
-console.log(myProxyInstance.getKey())  // 'my-store'
+console.log(myProxyInstance['my-store'].getKey())  // 'my-store'
 ```
 
 ## Options
@@ -247,14 +249,24 @@ const MyCloudStorage: StorageStrategy<true> = {
 
   async get(key: string): Promise<string | null> {
     // Fetch from your cloud storage
+    const response = await fetch(`https://api.example.com/storage/${key}`)
+    if (!response.ok) return null
+    return response.text()
   },
 
   async set(key: string, value: string): Promise<void> {
     // Save to your cloud storage
+    await fetch(`https://api.example.com/storage/${key}`, {
+      method: 'PUT',
+      body: value
+    })
   },
 
   async remove(key: string): Promise<void> {
     // Delete from your cloud storage
+    await fetch(`https://api.example.com/storage/${key}`, {
+      method: 'DELETE'
+    })
   },
 }
 
@@ -277,6 +289,12 @@ interface AppState {
 proxy.use(createPersistPlugin<AppState>('app', {
   paths: ['user', 'preferences']
 }))
+
+const store = proxy<AppState>({
+  user: null,
+  preferences: { theme: 'dark' },
+  cache: {}
+})
 ```
 
 ## Migration from valtio-persist
@@ -292,17 +310,23 @@ const { store } = await persist(
 )
 
 // After (valtio-persist-plugin)
+import { proxy } from 'valtio-plugin'
+import { createPersistPlugin, SessionStorageStrategy } from 'valtio-persist-plugin'
+
 proxy.use(createPersistPlugin('my-key', {
   storage: SessionStorageStrategy
 }))
+
 const store = proxy({ count: 0 })
-proxy.hydrate(store)
+
+await proxy['my-key'].hydrate(store)
 ```
 
 The plugin approach gives you:
 - Composition with other valtio-plugin plugins
 - Path-based filtering for multiple storage backends
 - More explicit control over hydration timing
+- Scoped instances with different persistence strategies
 
 ## License
 
