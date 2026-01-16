@@ -37,7 +37,7 @@ const store = proxy({
 })
 
 // hydrate from storage - you can do this at whatever point suits you best
-await proxy['mydata'].hydrate(store)
+await persist.hydrate(store)
 ```
 
 ```typescript
@@ -129,10 +129,11 @@ const userProxy = proxy.createInstance()
 const dataProxy = proxy.createInstance()
 
 // Session data in sessionStorage
-userProxy.use(createPersistPlugin('session', {
+const userPersist = createPersistPlugin('session', {
   storage: SessionStorageStrategy,
   paths: ['auth', 'preferences.theme']
-}))
+})
+userProxy.use(userPersist)
 
 const userStore = userProxy({
   auth: { token: '', user: null},
@@ -145,10 +146,11 @@ const userStore = userProxy({
 })
 
 // Large data in IndexedDB
-dataProxy.use(createPersistPlugin('data', {
+const dataPersist = createPersistPlugin('data', {
   storage: IndexedDBStorage,
   paths: ['documents', 'cache']
-}))
+})
+dataProxy.use(dataPersist)
 
 const dataStore = dataProxy({
   documents: [],
@@ -156,37 +158,38 @@ const dataStore = dataProxy({
 })
 
 // Hydrate both
-await userProxy['session'].hydrate(userStore)
-await dataProxy['data'].hydrate(dataStore)
+await userPersist.hydrate(userStore)
+await dataPersist.hydrate(dataStore)
 ```
 
 ## Plugin API
 
-Once registered, the plugin exposes these methods through the proxy/factory instance:
+Once registered, the plugin exposes these methods:
 
 ```typescript
 const myProxyInstance = proxy.createInstance()
 
-myProxyInstance.use(createPersistPlugin('my-store'))
+const myPersist = createPersistPlugin('my-store')
+myProxyInstance.use(myPersist)
 
 const store = myProxyInstance({ count: 0 })
 
 // Hydrate from storage
-await myProxyInstance['my-store'].hydrate(store)
+await myPersist.hydrate(store)
 
 // Manually trigger persistence
-await myProxyInstance['my-store'].persist(store)
+await myPersist.persist(store)
 
 // Clear persisted data
-await myProxyInstance['my-store'].clear()
+await myPersist.clear()
 
 // Check hydration status
-if (myProxyInstance['my-store'].isHydrated()) {
+if (myPersist.isHydrated()) {
   console.log('Ready!')
 }
 
 // Get the storage key
-console.log(myProxyInstance['my-store'].getKey())  // 'my-store'
+console.log(myPersist.getKey())  // 'my-store'
 ```
 
 ## Options
@@ -313,13 +316,14 @@ const { store } = await persist(
 import { proxy } from 'valtio-plugin'
 import { createPersistPlugin, SessionStorageStrategy } from 'valtio-persist-plugin'
 
-proxy.use(createPersistPlugin('my-key', {
+const persist = createPersistPlugin('my-key', {
   storage: SessionStorageStrategy
-}))
+})
+proxy.use(persist)
 
 const store = proxy({ count: 0 })
 
-await proxy['my-key'].hydrate(store)
+await persist.hydrate(store)
 ```
 
 The plugin approach gives you:
